@@ -34,7 +34,7 @@ and Perkins' viscous-crossflow method for bodies of revolution, as extended to 0
 Jorgensen. With `a` the angle from whichever end leads and coefficients on `A_ref = pi D^2 / 4`:
 
 ```
-N_att = sin(2a) cos(a/2)                          attached (slender-body) normal force, nose-first only
+N_att = sin(2a) cos(a/2)                          attached (slender-body) normal force; tail-first, faded in over L/D 1 to 2
 N_x   = eta(L/D, Mn) c_dc(Mn) (L D / A_ref) sin^2 a   separated crossflow, Mn = M sin a
 C_A   = (Cd0 f(M) + Cf pi D L / A_ref) cos^2 a     Cd0 = 0.3 nose-first, 1.0 tail-first, Cf = 0.0025
 
@@ -50,9 +50,14 @@ C_D = (N_att + N_x) sin a + C_A cos a
   lift share and keeps its drag, as a separated body would. The crossflow lift does not stall and
   peaks around 55-60 degrees, as it does on real bodies. On a slender rocket the stall is a knee in
   the lift curve; on a short body (a lander, a capsule nose-first) it is a cliff.
-* **Tail-first.** A flat base leading separates the flow at its edge, so there is no attached lift,
-  only crossflow and the tilted axial force. A capsule flying heat shield first gets an L/D of about
-  -0.2 to -0.3, like Apollo.
+* **Tail-first.** Slender-body lift depends on the cross-section, not on the shape of the leading
+  end, so a booster flying engine-first keeps its attached lift and lifts towards the side its
+  engine end is tilted, from the first degree, at every Mach (L/D about 0.2-0.6 at 15 degrees). That
+  lift needs body length to build behind the flat face, so it fades out below two diameters: a
+  capsule flying heat shield first is left with crossflow and its tilted axial force, and gets an
+  L/D of about -0.2 to -0.3, like Apollo. (An earlier version gave no tail-first attached lift at
+  all; on booster shapes crossflow and the tilted axial force then nearly cancelled, and the lift
+  flipped sign with Mach.)
 * **Mach 1.** The zero-alpha pressure drag is flat to M 0.8, peaks at M 1.05 (2.0x nose-first, 1.7x
   blunt base first) and settles towards 1.3x / 1.6x supersonic.
 * **Lift at Mach 1?** Not as a spike. Slender-body lift slope is Mach-independent, and the

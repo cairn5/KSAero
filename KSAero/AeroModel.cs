@@ -86,9 +86,15 @@ public static class AeroParameters
     public const double SkinFrictionCf = 0.0025;
 
     // The attached-flow (slender-body) part of the normal force holds up to the stall angle and
-    // fades out over the width after it. The separated crossflow part does not stall. A flat base
-    // leading separates the flow at its edge straight away, so tail-first flight has none.
-    public const double TailFirstAttachedFraction = 0.0;
+    // fades out over the width after it. The separated crossflow part does not stall.
+    //
+    // Leading with the flat base, it needs body length to build: slender-body lift depends on the
+    // cross-section, not on the shape of the leading end, so a booster flying engine-first has it
+    // in full, but a body barely longer than it is wide is all face and has none. It fades in
+    // across this range of fineness L/D. Without it, crossflow and the tilted axial force nearly
+    // cancel on a booster-shaped body and its lift flips sign with Mach.
+    public const double TailFirstAttachedStartFineness = 1.0;
+    public const double TailFirstAttachedFullFineness = 2.0;
     public const double StallAngleDeg = 20.0;
     public const double StallWidthDeg = 10.0;
     public const double PostStallAttachedFraction = 0.0;
@@ -134,8 +140,10 @@ public static class AeroParameters
 /// that keeps growing to about 55 degrees, so on a slender rocket the stall is a knee rather than
 /// a cliff; on a short body the attached term dominates and it is a cliff. a is measured from
 /// whichever end leads, so tail-first flight uses the same law with the base's drag in place of
-/// the nose's and no attached term. That makes a capsule flying heat shield first lift the way a
-/// real one does, from its tilted axial force, at an L/D of about -0.2 to -0.3.
+/// the nose's. Its attached term fades out for bodies shorter than about two diameters, so a
+/// slender booster flying engine-first lifts towards the side its engine end is tilted from the
+/// first degree, while a capsule flying heat shield first lifts the way a real one does, from its
+/// tilted axial force, at an L/D of about -0.2 to -0.3.
 /// </summary>
 public static class AeroModel
 {
@@ -163,8 +171,10 @@ public static class AeroModel
         double lead = Math.Atan2(sinLead, cosLead);
 
         // sin(2a) cos(a/2), written out so it needs no trig past the atan2 above.
-        double attached = (tailFirst ? AeroParameters.TailFirstAttachedFraction : 1.0)
-            * 2.0 * sinLead * cosLead * Math.Sqrt(0.5 * (1.0 + cosLead));
+        double attachedShare = tailFirst
+            ? SmoothStep(AeroParameters.TailFirstAttachedStartFineness, AeroParameters.TailFirstAttachedFullFineness, body.Fineness)
+            : 1.0;
+        double attached = attachedShare * 2.0 * sinLead * cosLead * Math.Sqrt(0.5 * (1.0 + cosLead));
 
         double crossMach = mach * sinLead;
         double eta = Lerp(FinenessEta(body.Fineness), 1.0,

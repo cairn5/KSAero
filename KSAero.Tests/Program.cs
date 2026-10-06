@@ -125,6 +125,24 @@ foreach (var (name, body) in bodies)
 // Nose up gives lift up.
 Check(At(slender, 5.0, 0.5).Lift > 0.0 && At(slender, 5.0, 0.5).ForceZ > 0.0, "lift sign");
 
+// A body two or more diameters long, flying engine-first, lifts towards the side its engine end is
+// tilted, from the first degree and more with every degree, at every Mach. Guidance steering by lift
+// needs the sign to hold still; without the attached term it flipped with Mach on booster shapes.
+foreach (double fineness in new[] { 2.0, 4.0, 6.0, 8.0, 11.0, 20.0 })
+{
+    var body = new AeroBody(fineness * 3.7, 3.7);
+    foreach (double mach in new[] { 0.3, 0.8, 0.95, 1.05, 1.2, 1.5, 2.0, 3.0, 4.0, 6.0 })
+    {
+        double prev = 0.0;
+        for (double lead = 0.5; lead <= 20.0; lead += 0.5)
+        {
+            double cl = At(body, 180.0 - lead, mach).Lift;
+            Check(cl > prev, $"engine-first lift not rising at L/D {fineness}, M {mach}, {lead} deg: {prev:F4} -> {cl:F4}");
+            prev = cl;
+        }
+    }
+}
+
 // A capsule heat shield first lifts like Apollo, against the slender-body sense, at every trim angle.
 foreach (double lead in new[] { 10.0, 15.0, 20.0, 25.0, 30.0 })
 {
