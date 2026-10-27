@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+  # nightly.yml runs the same jobs, and releases the mod package they build.
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: aero model tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+      NUGET_XMLDOC_MODE: skip
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      # The model has no game references, so its tests need no KSA assemblies.
+      - name: Restore
+        run: dotnet restore KSAero.Tests/KSAero.Tests.csproj --locked-mode
+
+      - name: Run the aero model tests
+        run: dotnet run --project KSAero.Tests/KSAero.Tests.csproj --configuration Release --no-restore
+
+  mod:
+    name: mod release build
+    needs: test
+    # Fork pull requests get no secrets, so they cannot fetch the KSA reference assemblies.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+      NUGET_XMLDOC_MODE: skip
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      # The reference assemblies stay in the runner's temp folder: they must never be uploaded
+      # as an artifact or cached, since both can be read from a public repository. They are the
+      # ones KSA-AdvancedFlightComputer publishes, from the same bucket.
+      - name: Fetch KSA reference assemblies
+        shell: pwsh
+        env:
+          B2_APPLICATION_KEY_ID: ${{ secrets.KSAREFS_ID }}
+          B2_APPLICATION_KEY: ${{ secrets.KSAREFS_KEY }}
+          B2_BUCKET: ksarefs
+        run: >-
+          ./build/ci/fetch-ksa-refs.ps1
+          -Destination '${{ runner.temp }}/ksa-refs'
+
+      - name: Restore
+        run: dotnet restore KSAero/KSAero.csproj --locked-mode
+
+      # Release runs the PackageRelease target, which zips KSAero.dll and mod.toml only, so no
+      # game assembly can end up in the package.
+      - name: Build and package the mod
+        run: >-
+          dotnet build KSAero/KSAero.csproj
+          --configuration Release
+          --no-restore
+          -p:DeployToMods=false
+          -p:GenerateLaunchProfile=false
+          "-p:KsaDir=${{ runner.temp }}/ksa-refs"
+
+      - name: Upload mod package
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: KSAero
+          path: KSAero/bin/Release/net10.0/KSAero.zip
+          if-no-files-found: error
+          retention-days: 7
