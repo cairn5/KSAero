@@ -8,7 +8,7 @@ namespace KSAero;
 [StarMapMod]
 public sealed class Mod
 {
-    private const string TestedGameVersion = "v2026.10.7.5541";
+    private const string TestedGameVersion = "v2026.10.19.5638";
     private const string HarmonyId = "ksaero";
 
     private static Harmony? _harmony;

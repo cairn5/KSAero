@@ -6,7 +6,7 @@ angle-of-attack drag, lift with a stall, and a transonic drag rise. Rotational d
 exactly as stock.
 
 Written against the [StarMap](https://github.com/StarMapLoader/StarMap) loader and tested against
-KSA `v2026.10.7.5541`.
+KSA `v2026.10.19.5638`.
 
 ## What stock does
 
