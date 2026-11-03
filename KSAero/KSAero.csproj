@@ -5,7 +5,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <KsaDir Condition="'$(KsaDir)' == ''">C:\Program Files\Kitten Space Agency</KsaDir>
+    <KsaDir Condition="'$(KsaDir)' == ''">C:\Program Files\Ahwoo\Games\Kitten Space Agency</KsaDir>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,7 +6,7 @@ angle-of-attack drag, lift with a stall, and a transonic drag rise. Rotational d
 exactly as stock.
 
 Written against the [StarMap](https://github.com/StarMapLoader/StarMap) loader and tested against
-KSA `v2026.10.19.5638`.
+KSA `v2026.10.25.5707`.
 
 ## What stock does
 
@@ -113,7 +113,7 @@ isothermal exponentials, so the speed of sound is constant per body (340 m/s on 
 
 ## Build
 
-.NET 10. Game assemblies come from `KsaDir` (default `C:\Program Files\Kitten Space Agency`).
+.NET 10. Game assemblies come from `KsaDir` (default `C:\Program Files\Ahwoo\Games\Kitten Space Agency`, the Ahwoo launcher install).
 
 ```
 dotnet build KSAero
