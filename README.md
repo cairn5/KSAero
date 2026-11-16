@@ -123,6 +123,18 @@ builds and copies `KSAero.dll` and `mod.toml` into
 `Documents\My Games\Kitten Space Agency\mods\KSAero\`. Pass `-p:DeployToMods=false` to skip that.
 Enable the mod in the game's mod list (or `manifest.toml`).
 
+The assembly is AnyCPU, so the same `KSAero.dll` loads on Windows, Linux and Apple silicon Macs.
+Do not build with `--runtime` or a `PlatformTarget`: that marks it for one architecture, and .NET on
+another refuses to load it.
+
+### macOS
+
+Set `USERPROFILE`, which sets where the mod deploys, and `KsaDir`, which locates the game.
+
+```sh
+USERPROFILE="$HOME" dotnet build KSAero -p:GenerateLaunchProfile=false -p:KsaDir="$HOME/Applications/Kitten Space Agency.app/Contents/Resources"
+```
+
 ## Caveats
 
 * The bounding box is the only geometry. Side boosters, fins and wings widen it, and the model
