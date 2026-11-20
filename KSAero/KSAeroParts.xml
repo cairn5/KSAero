@@ -126,4 +126,72 @@
       <EditorTag Ref="Aero" />
     </EditorTags>
   </Part>
+  <!-- 3 m span x 3 m chord. There is no stock 3 m panel, so the look is the 2 m panel scaled 1.5x in
+       its plane, on a subpart of its own: a subpart's colliders scale with it, so the collider sits
+       on a second, unscaled subpart. FinActuators turns both. -->
+  <SubPart Id="KSAero_Subpart_FinBladeLook3m">
+    <Components>
+      <PartModel Key="KSAero_Subpart_FinBladeLook3m_Model">
+        <Mesh Ref="CoreStructuralA_Subpart_PanelHA" />
+        <Material Ref="CoreStructuralA_Material" />
+      </PartModel>
+      <MeshView>
+        <Mesh Ref="CoreStructuralA_Subpart_PanelHA_VM" />
+      </MeshView>
+    </Components>
+  </SubPart>
+
+  <SubPart Id="KSAero_Subpart_FinBlade3m">
+    <Components>
+      <Collider Key="BladeCollider">
+        <Colliders>
+          <Box Key="BladeBox">
+            <LocationAsmb X="0" Y="0" Z="0" />
+            <Collider2Asmb X="0" Y="0" Z="0" />
+            <LengthX M="3" />
+            <LengthY M="3" />
+            <LengthZ M="0.01" />
+          </Box>
+        </Colliders>
+      </Collider>
+    </Components>
+  </SubPart>
+
+  <Part Id="KSAero_AllMovingFin3m" DisplayName="All-Moving Fin 3 m">
+    <SubParts>
+      <SubPart Key="BladeLook" Ref="KSAero_Subpart_FinBladeLook3m">
+        <Transform>
+          <Position X="-1.5" />
+          <Rotation X="1.5708" />
+          <Scale X="1.5" Y="1.5" Z="1" />
+        </Transform>
+      </SubPart>
+      <SubPart Key="Blade" Ref="KSAero_Subpart_FinBlade3m">
+        <Transform>
+          <Position X="-1.5" />
+          <Rotation X="1.5708" />
+        </Transform>
+      </SubPart>
+    </SubParts>
+    <Connectors>
+      <Connector Key="Root">
+        <Transform>
+          <Position X="0" />
+        </Transform>
+        <Flags>ToSurface</Flags>
+      </Connector>
+    </Connectors>
+    <InertMasses>
+      <SolidCuboidMass>
+        <Mass Kg="360" />
+        <LocationAsmb X="-1.5" />
+        <LengthX M="3" />
+        <LengthY M="0.035" />
+        <LengthZ M="3" />
+      </SolidCuboidMass>
+    </InertMasses>
+    <EditorTags>
+      <EditorTag Ref="Aero" />
+    </EditorTags>
+  </Part>
 </Assets>

@@ -17,11 +17,17 @@ namespace KSAero;
 /// </summary>
 internal static class FinActuators
 {
-    /// <summary>The blade subpart templates. Only subparts with one of these ids are turned.</summary>
+    /// <summary>
+    /// The blade subpart templates: only subparts with one of these ids are turned, and a part with
+    /// one is a fin. All are KSAero's own, so no stock part is ever taken for a fin. The 3 m blade's
+    /// look is a subpart of its own (its scale would scale a collider on it).
+    /// </summary>
     private static readonly HashSet<string> BladeTemplateIds = new(StringComparer.Ordinal)
     {
         "KSAero_Subpart_FinBlade1m",
         "KSAero_Subpart_FinBlade2m",
+        "KSAero_Subpart_FinBlade3m",
+        "KSAero_Subpart_FinBladeLook3m",
     };
 
     /// <summary>Applied angles are rounded to this, so a fin holding still is not re-posed.</summary>

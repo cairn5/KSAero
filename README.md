@@ -10,15 +10,17 @@ stock aero is better than that now, so it is gone.
 
 ## Parts
 
-Both are in the **Aero** category of the part picker and attach to a hull like a landing leg.
+All are in the **Aero** category of the part picker and attach to a hull like a landing leg.
 
 | Part | Blade (span x chord) | Mass |
 |---|---|---|
 | All-Moving Fin 1 m | 1 m x 1 m, 35 mm | 40 kg |
 | All-Moving Fin 2 m | 2 m x 2 m, 35 mm | 160 kg |
+| All-Moving Fin 3 m | 3 m x 3 m, 52 mm | 360 kg |
 
 The whole blade turns about its span axis, through the middle of the chord. Its look is the stock
-flat panel of the same size turned on edge; KSAero has no meshes of its own yet.
+flat panel of the same size turned on edge (the 3 m blade is the 2 m panel scaled up); KSAero has no
+meshes of its own yet.
 
 ## In game
 
