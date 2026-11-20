@@ -115,6 +115,43 @@ internal static class FinAeroPanels
     /// The fin's turn about its part X axis, as a rotation of vehicle-frame vectors: into the fin's
     /// frame, turn, back out.
     /// </summary>
+    /// <summary>One blade's box collider at rest, in the vehicle frame, with the fin's hinge point and orientation: what a mesh's fin panels are picked by (<see cref="FinPanelSet.Select"/>) and turned about.</summary>
+    internal readonly record struct BladeBox(Vector3 Center, Quaternion Rotation, Vector3 HalfExtents, Vector3 Hinge, doubleQuat Fin2Vehicle);
+
+    /// <summary>The fin's blade boxes at rest, as Gather sees them (it holds the blades at rest). Reads the parts: main thread, or the solver thread between solves.</summary>
+    internal static List<BladeBox> BladeBoxes(Part fin)
+    {
+        var boxes = new List<BladeBox>();
+        ReadOnlySpan<Part> subParts = fin.SubParts;
+        for (int i = 0; i < subParts.Length; i++)
+        {
+            Part blade = subParts[i];
+            if (!FinActuators.IsBlade(blade))
+                continue;
+            Span<ColliderModule> colliders = blade.Modules.Get<ColliderModule>();
+            for (int j = 0; j < colliders.Length; j++)
+            {
+                if (colliders[j].ShapeTemplate is not BoxColliderTemplate box)
+                    continue;
+                ColliderModule collider = colliders[j];
+
+                // The blade's rest pose in the vehicle frame, as Gather would see it at rest.
+                doubleQuat fin2Vehicle = fin.Asmb2VehicleAsmb;
+                doubleQuat bladeRot = doubleQuat.Concatenate(blade.Asmb2ParentAsmbSafe, fin2Vehicle);
+                double3 bladePos = fin.PositionVehicleAsmb + blade.PositionParentAsmbSafe.Transform(fin2Vehicle);
+                double3 boxCenter = bladePos + collider.PositionPartAsmb.Transform(bladeRot);
+                doubleQuat boxRot = doubleQuat.Concatenate(collider.Collider2PartAsmb, bladeRot);
+                double scale = collider.Scale;
+                var half = new Vector3(
+                    (float)(0.5 * (double)box.LengthX * scale),
+                    (float)(0.5 * (double)box.LengthY * scale),
+                    (float)(0.5 * (double)box.LengthZ * scale));
+                boxes.Add(new BladeBox(boxCenter.ToBepu(), Quaternion.Normalize(boxRot.ToBepu()), half, fin.PositionVehicleAsmb.ToBepu(), fin2Vehicle));
+            }
+        }
+        return boxes;
+    }
+
     internal static Quaternion VehicleTurn(doubleQuat fin2Vehicle, double deg)
     {
         doubleQuat turn = doubleQuat.CreateFromAxisAngle(double3.UnitX, deg * Math.PI / 180.0);
@@ -138,34 +175,10 @@ internal static class FinAeroPanels
         var entries = new List<FinEntry>(fins.Count);
         foreach (Part fin in fins)
         {
-            ReadOnlySpan<Part> subParts = fin.SubParts;
-            for (int i = 0; i < subParts.Length; i++)
+            foreach (BladeBox box in BladeBoxes(fin))
             {
-                Part blade = subParts[i];
-                if (!FinActuators.IsBlade(blade))
-                    continue;
-                Span<ColliderModule> colliders = blade.Modules.Get<ColliderModule>();
-                for (int j = 0; j < colliders.Length; j++)
-                {
-                    if (colliders[j].ShapeTemplate is not BoxColliderTemplate box)
-                        continue;
-                    ColliderModule collider = colliders[j];
-
-                    // The blade's rest pose in the vehicle frame, as Gather would see it at rest.
-                    doubleQuat fin2Vehicle = fin.Asmb2VehicleAsmb;
-                    doubleQuat bladeRot = doubleQuat.Concatenate(blade.Asmb2ParentAsmbSafe, fin2Vehicle);
-                    double3 bladePos = fin.PositionVehicleAsmb + blade.PositionParentAsmbSafe.Transform(fin2Vehicle);
-                    double3 boxCenter = bladePos + collider.PositionPartAsmb.Transform(bladeRot);
-                    doubleQuat boxRot = doubleQuat.Concatenate(collider.Collider2PartAsmb, bladeRot);
-                    double scale = collider.Scale;
-                    var half = new Vector3(
-                        (float)(0.5 * (double)box.LengthX * scale),
-                        (float)(0.5 * (double)box.LengthY * scale),
-                        (float)(0.5 * (double)box.LengthZ * scale));
-
-                    FinPanelSet panels = FinPanelSet.Select(mesh.Surface, boxCenter.ToBepu(), Quaternion.Normalize(boxRot.ToBepu()), half, mesh.PanelWidth);
-                    entries.Add(new FinEntry(fin, panels, fin.PositionVehicleAsmb.ToBepu(), fin2Vehicle));
-                }
+                FinPanelSet panels = FinPanelSet.Select(mesh.Surface, box.Center, box.Rotation, box.HalfExtents, mesh.PanelWidth);
+                entries.Add(new FinEntry(fin, panels, box.Hinge, box.Fin2Vehicle));
             }
         }
         fins.Clear();

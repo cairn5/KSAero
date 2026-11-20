@@ -31,6 +31,8 @@ public sealed class Mod
             Patch(harmony);
             _harmony = harmony;
             DefaultCategory.Log.Info("[KSAero] Loaded. All-moving fins are driven from the KSAero fins window.");
+            // Every mod is loaded by now, so AFC's control-surface registry is there to find if AFC is installed.
+            AfcSurfaces.TryRegister();
         }
         catch (Exception ex)
         {
