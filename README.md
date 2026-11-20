@@ -24,12 +24,14 @@ meshes of its own yet.
 
 ## In game
 
-While the controlled vehicle has fins, the **KSAero fins** window commands them: one slider for all
-fins and one per fin, a maximum deflection (default 45 deg) and an actuator rate (default 30 deg/s).
-It also shows how often the aero mesh is rebuilt and how long physics waits for it.
+The fins deflect up to 45 deg at 30 deg/s. AdvancedFlightComputer flies them: KSAero registers them
+with its control-surface registry, and its attitude controller and touchdown guidance command them.
+Without AdvancedFlightComputer nothing moves them.
 
-Deflections are not saved: a loaded vehicle's fins start at zero. Nothing moves them except the
-window yet; there is no pitch/yaw/roll mixing.
+A **KSAero fins** debug window (one slider for all fins and one per fin, and how long physics waits
+for the aero) is in the code but off; set `Mod.ShowFinDebugWindow` to true to build it in.
+
+Deflections are not saved: a loaded vehicle's fins start at zero.
 
 ## How it works
 

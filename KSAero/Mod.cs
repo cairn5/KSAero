@@ -16,6 +16,9 @@ public sealed class Mod
     private const string TestedGameVersion = "v2026.11.16.5901";
     private const string HarmonyId = "ksaero";
 
+    /// <summary>The KSAero fins debug window (FinDebugWindow). Off: AdvancedFlightComputer flies the fins; set true to drive them by hand.</summary>
+    internal const bool ShowFinDebugWindow = false;
+
     private static Harmony? _harmony;
 
     [StarMapAllModsLoaded]
@@ -59,7 +62,7 @@ public sealed class Mod
     [StarMapAfterGui]
     public void DrawGui(double dt)
     {
-        if (_harmony != null)
+        if (ShowFinDebugWindow && _harmony != null)
             FinDebugWindow.Draw(dt);
     }
 
