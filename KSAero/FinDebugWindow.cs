@@ -15,10 +15,10 @@ internal static class FinDebugWindow
     private static bool _failureLogged;
     private static float _all;
 
-    // Re-mesh statistics, refreshed once a second.
+    // Pose and aero-wait statistics, refreshed once a second.
     private static double _windowStart = double.NaN;
-    private static int _remeshAtWindowStart;
-    private static int _remeshPerSecond;
+    private static int _posesAtWindowStart;
+    private static int _posesPerSecond;
     private static AeroWaitMeter.Window _lastWait = new();
 
     internal static void Draw(double dt)
@@ -84,9 +84,17 @@ internal static class FinDebugWindow
             ImGui.SliderFloat("Rate", ref FinActuators.RateDegPerSecond, 1f, 360f, "%.0f deg/s");
 
             ImGui.Separator();
-            ImGui.Text(Format("Aero re-mesh requests {0}/s", _remeshPerSecond));
-            ImGui.Text(Format("Physics waiting on aero: {0:F1} ms/s, longest {1:F1} ms ({2} waits)",
-                _lastWait.TotalMs, _lastWait.MaxMs, _lastWait.Count));
+            ImGui.Text(Format("Fin poses {0}/s (panels turned in place, no re-mesh)", _posesPerSecond));
+            if (vehicle.Parts?.Aerodynamics?.Mesh is { } mesh)
+            {
+                (int fins, int panels) = FinAeroPanels.Describe(mesh);
+                ImGui.Text(Format("Aero mesh: {0} fin panels on {1} fins, {2} panels in all",
+                    panels, fins, mesh.SolidPanels.Length + mesh.SheetPanels.Length));
+                if (fins > 0 && panels == 0)
+                    ImGui.TextDisabled("No fin panels found: the fins will not change the aero.");
+            }
+            ImGui.Text(Format("Physics waiting on aero rebuilds: {0:F1} ms/s, longest {1:F1} ms",
+                _lastWait.TotalMs, _lastWait.MaxMs));
         }
         finally
         {
@@ -100,14 +108,14 @@ internal static class FinDebugWindow
         if (double.IsNaN(_windowStart))
         {
             _windowStart = now;
-            _remeshAtWindowStart = FinActuators.RemeshRequests;
+            _posesAtWindowStart = FinActuators.PoseCount;
             return;
         }
         if (now - _windowStart < 1.0)
             return;
         double span = now - _windowStart;
-        _remeshPerSecond = (int)Math.Round((FinActuators.RemeshRequests - _remeshAtWindowStart) / span);
-        _remeshAtWindowStart = FinActuators.RemeshRequests;
+        _posesPerSecond = (int)Math.Round((FinActuators.PoseCount - _posesAtWindowStart) / span);
+        _posesAtWindowStart = FinActuators.PoseCount;
         _windowStart = now;
         if (vehicle.Parts is { } tree)
             _lastWait = AeroWaitMeter.Take(tree);

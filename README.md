@@ -32,21 +32,40 @@ window yet; there is no pitch/yaw/roll mixing.
 ## How it works
 
 * A fin is one part. The blade is a subpart with its own box collider, defined in
-  [KSAero/KSAeroParts.xml](KSAero/KSAeroParts.xml).
+  [KSAero/KSAeroParts.xml](KSAero/KSAeroParts.xml). The collider is 10 mm thick, so stock's aero
+  mesh always makes the blade a zero-depth sheet.
 * Once a frame, at the start of `PartTree.FlushDirtyDerived` (a Harmony prefix), `FinActuators`
   steps each fin towards its command at the actuator rate and re-poses the blade subpart about the
   part's X axis, as `KeyframeAnimationModule` poses a subpart with a supplemental rotation. That is
   on the main thread, after the frame has waited for the vehicle solver and before the next solve
-  starts, so no physics step sees a half-moved blade.
-* Moving a subpart does not dirty stock's aero mesh by itself, so `FinActuators` marks
-  `DerivedData.AeroMesh` dirty. The same flush gathers the colliders and starts the rebuild. The
-  angle is rounded to 0.1 deg, so a fin at rest never causes one.
+  starts, so no physics step sees a half-moved blade. This moves the model and the collider.
+* The aero mesh is not rebuilt. `AeroMeshSource.Gather`, which every mesh build starts from, is
+  wrapped so the blades sit at rest while it runs: every mesh has the fins at rest, and deflection
+  never changes the mesh hash. When `PartTree.AwaitAerodynamics` hands a physics step its mesh,
+  `FinAeroPanels` turns each fin's sheet panels in that mesh to the fin's angle, a rigid rotation
+  about the hinge computed from the rest geometry (`FinPanelSet`), and makes the surface flow
+  recompute.
 
-### Cost
+### Cost and accuracy
 
-Each rebuild re-meshes the whole vehicle, and the next physics step waits for it
-(`PartTree.AwaitAerodynamics`). Offline, a 40 m body with four fins took 5-17 ms per rebuild, so a
-fin that is moving costs about that much per frame. A fin at rest costs nothing.
+Offline, against meshes built by KSA's own `AeroAssembly`:
+
+| Case | Turn the panels + flow + loads | Full re-mesh |
+|---|---|---|
+| 1 m fin on a 3.7 m hull | 0.26 ms | 7.5 ms |
+| 3 m fin on a 1.2 m hull (91 fin panels) | 0.64 ms | 13.4 ms |
+
+The flow and loads are computed every step anyway, so the pose itself adds little; and nothing
+blocks physics. Where the mesh resolves the fin (3 m fin, 0.21 m panels) the loads match a full
+re-mesh at the same angle within about 1-4%. Where it does not, re-meshing at each angle is noisy
+and not even monotonic in the angle, while turning the panels stays linear.
+
+### Fin size
+
+Stock aero sizes its panels from the vehicle (about an eighth of the main body's section) and
+loses about half a panel around a sheet's edges. On a 3.7 m launcher (0.65 m panels) a 1 m fin
+keeps under half its area in the aero mesh, a 2 m fin a little under half, a 3 m fin about two
+thirds; a 1 m fin standing clear of the hull disappears. Size fins to several panel widths.
 
 ## Build
 

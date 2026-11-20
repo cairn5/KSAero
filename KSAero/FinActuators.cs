@@ -10,10 +10,10 @@ namespace KSAero;
 /// <see cref="KeyframeAnimationModule"/> poses a subpart with its supplemental rotation.
 ///
 /// It runs on the main thread at the start of <see cref="PartTree.FlushDirtyDerived"/>, once a
-/// frame: after the frame has waited for the vehicle solver and before it rebuilds derived data and
-/// starts the next solve. So it never moves a blade while a physics step reads it, and the aero
-/// mesh it asks for is rebuilt in the same flush. Moving a subpart does not dirty the aero mesh by
-/// itself (only full-part moves do), so it is marked dirty here.
+/// frame: after the frame has waited for the vehicle solver and before it starts the next solve, so
+/// it never moves a blade while a physics step reads it. It moves the blade's model and collider
+/// only; the aero mesh is not rebuilt; <see cref="FinAeroPanels"/> turns the blade's panels in the
+/// existing mesh instead.
 /// </summary>
 internal static class FinActuators
 {
@@ -24,14 +24,14 @@ internal static class FinActuators
         "KSAero_Subpart_FinBlade2m",
     };
 
-    /// <summary>Applied angles are rounded to this, so a blade at rest gives the same aero mesh hash.</summary>
+    /// <summary>Applied angles are rounded to this, so a fin holding still is not re-posed.</summary>
     private const double QuantumDeg = 0.1;
 
     internal static float MaxDeflectionDeg = 30f;
     internal static float RateDegPerSecond = 30f;
 
-    /// <summary>Aero mesh rebuilds this module asked for, for the debug window.</summary>
-    internal static int RemeshRequests;
+    /// <summary>Blade poses applied, for the debug window.</summary>
+    internal static int PoseCount;
 
     private static readonly ConditionalWeakTable<Part, FinState> States = new();
     private static double _lastSimSeconds = double.NaN;
@@ -49,6 +49,8 @@ internal static class FinActuators
     }
 
     internal static FinState StateOf(Part fin) => States.GetValue(fin, static _ => new FinState());
+
+    internal static bool IsBlade(Part part) => part.IsSubPart && BladeTemplateIds.Contains(part.Template.Id);
 
     internal static bool IsFin(Part part)
     {
@@ -118,6 +120,20 @@ internal static class FinActuators
 
     private static void Pose(Part fin, double deflectionDeg)
     {
+        PoseBlades(fin, deflectionDeg);
+        fin.UpdateBounds();
+        Span<ColliderModule> colliders = fin.SubtreeModules.Get<ColliderModule>();
+        for (int i = 0; i < colliders.Length; i++)
+            colliders[i].NeedsColliderUpdate = true;
+        PoseCount++;
+    }
+
+    /// <summary>
+    /// Sets the blade subparts' transforms only, as <see cref="KeyframeAnimationModule"/> does with
+    /// its supplemental rotation. Also used to hold the blades at rest while an aero mesh is gathered.
+    /// </summary>
+    internal static void PoseBlades(Part fin, double deflectionDeg)
+    {
         doubleQuat turn = doubleQuat.CreateFromAxisAngle(double3.UnitX, deflectionDeg * Math.PI / 180.0);
         ReadOnlySpan<Part> subParts = fin.SubParts;
         for (int i = 0; i < subParts.Length; i++)
@@ -128,13 +144,5 @@ internal static class FinActuators
             blade.PositionParentAsmb = blade.PositionParentAsmbSafe.Transform(turn);
             blade.Asmb2ParentAsmb = doubleQuat.Concatenate(blade.Asmb2ParentAsmbSafe, turn);
         }
-
-        fin.UpdateBounds();
-        Span<ColliderModule> colliders = fin.SubtreeModules.Get<ColliderModule>();
-        for (int i = 0; i < colliders.Length; i++)
-            colliders[i].NeedsColliderUpdate = true;
-
-        fin.Tree?.MarkDerivedDirty(DerivedData.AeroMesh);
-        RemeshRequests++;
     }
 }

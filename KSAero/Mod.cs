@@ -45,6 +45,10 @@ public sealed class Mod
             AccessTools.Method(typeof(PartTree), nameof(PartTree.FlushDirtyDerived)),
             prefix: new HarmonyMethod(typeof(FinActuators), nameof(FinActuators.Update)));
         harmony.Patch(
+            AccessTools.Method(typeof(KSA.Aero.AeroMeshSource), nameof(KSA.Aero.AeroMeshSource.Gather)),
+            prefix: new HarmonyMethod(typeof(FinAeroPanels), nameof(FinAeroPanels.GatherPrefix)),
+            postfix: new HarmonyMethod(typeof(FinAeroPanels), nameof(FinAeroPanels.GatherPostfix)));
+        harmony.Patch(
             AccessTools.Method(typeof(PartTree), nameof(PartTree.AwaitAerodynamics)),
             prefix: new HarmonyMethod(typeof(AeroWaitMeter), nameof(AeroWaitMeter.Prefix)),
             postfix: new HarmonyMethod(typeof(AeroWaitMeter), nameof(AeroWaitMeter.Postfix)));

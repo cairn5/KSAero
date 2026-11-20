@@ -5,10 +5,11 @@
   about the part's X axis. X is the span axis: the blade runs from the root at X = 0 out to -X.
   The chord runs along Z and the thickness along Y.
 
-  The blade carries its own box collider, so stock 5901 aero, which builds its mesh from the
-  colliders, sees the blade where it is. KSAero re-poses the subpart and asks for a new aero mesh
-  whenever the deflection changes (FinActuators.cs). The blade mesh is the stock flat panel of the
-  same size, turned on edge; KSAero has no meshes of its own yet.
+  The blade carries its own box collider, which stock 5901 aero builds its mesh from. The collider
+  is 10 mm thick, thinner than the 35 mm panel it wears, so the aero mesh always makes the blade a
+  zero-depth sheet: KSAero then turns the sheet's panels in place (FinAeroPanels.cs) rather than
+  re-meshing the vehicle. The blade mesh is the stock flat panel of the same size, turned on edge;
+  KSAero has no meshes of its own yet.
 -->
 <Assets>
   <EditorTagDef Id="Aero" />
@@ -31,7 +32,7 @@
             <Collider2Asmb X="0" Y="0" Z="0" />
             <LengthX M="1" />
             <LengthY M="1" />
-            <LengthZ M="0.035" />
+            <LengthZ M="0.01" />
           </Box>
         </Colliders>
       </Collider>
@@ -88,7 +89,7 @@
             <Collider2Asmb X="0" Y="0" Z="0" />
             <LengthX M="2" />
             <LengthY M="2" />
-            <LengthZ M="0.035" />
+            <LengthZ M="0.01" />
           </Box>
         </Colliders>
       </Collider>

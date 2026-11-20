@@ -32,9 +32,11 @@ internal static class AeroWaitMeter
 
     internal static void Prefix() => _start = Stopwatch.GetTimestamp();
 
-    internal static void Postfix(PartTree __instance)
+    /// <summary>Also hands the mesh to <see cref="FinAeroPanels.Apply"/>, after the wait is timed.</summary>
+    internal static void Postfix(PartTree __instance, KSA.Aero.Aerodynamics? __result)
     {
         double ms = Stopwatch.GetElapsedTime(_start).TotalMilliseconds;
+        FinAeroPanels.Apply(__instance, __result);
         if (ms < RecordThresholdMs)
             return;
         Meter meter = Meters.GetValue(__instance, static _ => new Meter());
