@@ -5,11 +5,19 @@ using StarMap.API;
 
 namespace KSAero;
 
+/// <summary>
+/// KSAero adds control surfaces for KSA's stock aerodynamics: parts in KSAeroParts.xml, moved by
+/// <see cref="FinActuators"/>. Stock aero builds its mesh from part colliders, so a moved blade is
+/// flown as it is posed.
+/// </summary>
 [StarMapMod]
 public sealed class Mod
 {
-    private const string TestedGameVersion = "v2026.10.25.5707";
+    private const string TestedGameVersion = "v2026.11.16.5901";
     private const string HarmonyId = "ksaero";
+
+    /// <summary>The KSAero fins debug window (FinDebugWindow). Off: AdvancedFlightComputer flies the fins; set true to drive them by hand.</summary>
+    internal const bool ShowFinDebugWindow = false;
 
     private static Harmony? _harmony;
 
@@ -23,23 +31,39 @@ public sealed class Mod
         var harmony = new Harmony(HarmonyId);
         try
         {
-            AirForcePatch.Apply(harmony);
+            Patch(harmony);
             _harmony = harmony;
-            DefaultCategory.Log.Info("[KSAero] Loaded. Atmospheric forces now use the body-of-revolution model.");
+            DefaultCategory.Log.Info("[KSAero] Loaded. All-moving fins are driven from the KSAero fins window.");
+            // Every mod is loaded by now, so AFC's control-surface registry is there to find if AFC is installed.
+            AfcSurfaces.TryRegister();
         }
         catch (Exception ex)
         {
-            // The transpiler refuses rather than guesses, so a failure here leaves stock aero running.
             harmony.UnpatchAll(HarmonyId);
-            DefaultCategory.Log.Warning($"[KSAero] Patching failed, stock aerodynamics stay in place: {ex}");
+            DefaultCategory.Log.Warning($"[KSAero] Patching failed, fins will not move: {ex}");
         }
+    }
+
+    internal static void Patch(Harmony harmony)
+    {
+        harmony.Patch(
+            AccessTools.Method(typeof(PartTree), nameof(PartTree.FlushDirtyDerived)),
+            prefix: new HarmonyMethod(typeof(FinActuators), nameof(FinActuators.Update)));
+        harmony.Patch(
+            AccessTools.Method(typeof(KSA.Aero.AeroMeshSource), nameof(KSA.Aero.AeroMeshSource.Gather)),
+            prefix: new HarmonyMethod(typeof(FinAeroPanels), nameof(FinAeroPanels.GatherPrefix)),
+            postfix: new HarmonyMethod(typeof(FinAeroPanels), nameof(FinAeroPanels.GatherPostfix)));
+        harmony.Patch(
+            AccessTools.Method(typeof(PartTree), nameof(PartTree.AwaitAerodynamics)),
+            prefix: new HarmonyMethod(typeof(AeroWaitMeter), nameof(AeroWaitMeter.Prefix)),
+            postfix: new HarmonyMethod(typeof(AeroWaitMeter), nameof(AeroWaitMeter.Postfix)));
     }
 
     [StarMapAfterGui]
     public void DrawGui(double dt)
     {
-        if (_harmony != null)
-            AeroReadout.Draw();
+        if (ShowFinDebugWindow && _harmony != null)
+            FinDebugWindow.Draw(dt);
     }
 
     [StarMapUnload]

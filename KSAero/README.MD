@@ -1,7 +1,7 @@
-# KSAero - Simple aerodynamics for KSA
+# KSAero - Control surfaces for KSA
 
-### Better aero for rockets
+### All-moving fins for stock aerodynamics
 
-This mod updates the stock game's aerodynamics to be more accurate for slender axisymmetric bodies. Bodies now create lift, exhibit stall, and drag is more realistic for the kind of vehicles most players fly.
+KSA's stock aerodynamics flies whatever shape the part colliders make. KSAero adds all-moving fins whose blades turn about their span, so stock aero gives them lift and control moments.
 
-### This is currently intended as a placeholder until devs implement better aero.
+### This is currently intended as a placeholder until the game has its own control surfaces.

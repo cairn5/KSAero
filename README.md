@@ -1,115 +1,75 @@
 # KSAero
 
-A deliberately simple aerodynamics mod for Kitten Space Agency, to stand in until the game has
-real aero. It replaces stock's atmospheric drag with a body-of-revolution model that has
-angle-of-attack drag, lift with a stall, and a transonic drag rise. Rotational dynamics are left
-exactly as stock.
+Control surfaces for Kitten Space Agency, to stand in until the game has its own. KSA 5901's stock
+aerodynamics builds the vehicle's aero mesh from part colliders and flies it with a supersonic
+panel method, so a part that moves its collider is flown where it is. KSAero adds parts that do.
 
 Written against the [StarMap](https://github.com/StarMapLoader/StarMap) loader and tested against
-KSA `v2026.10.25.5707`.
+KSA `v2026.11.16.5901`. Earlier versions replaced stock's drag with a body-of-revolution model;
+stock aero is better than that now, so it is gone.
 
-## What stock does
+## Parts
 
-`PhysicsStates.ComputeDrag`, fed by `VehicleProperties.RecomputeAerodynamicProperties`:
+All are in the **Aero** category of the part picker and attach to a hull like a landing leg.
 
-```
-F = (CdA_box(v_hat) + 0.1 * S_box) * q          along -v, through the centre of mass
-CdA_box = sum over axes |v_i| * Cd_i * A_i      Cd: nose 0.3, tail 1.0, each side 1.2
-```
+| Part | Blade (span x chord) | Mass |
+|---|---|---|
+| All-Moving Fin 1 m | 1 m x 1 m, 35 mm | 40 kg |
+| All-Moving Fin 2 m | 2 m x 2 m, 35 mm | 160 kg |
+| All-Moving Fin 3 m | 3 m x 3 m, 52 mm | 360 kg |
 
-* A box: the side term is `|v_y| A_y + |v_z| A_z`, so rolling a round rocket 45 degrees changes its
-  drag by up to sqrt(2).
-* Drag rises linearly with |sin(alpha)| from the first degree. Real crossflow drag grows as
-  sin^3(alpha).
-* The `0.1 * S_box` skin term is about 40x a real turbulent skin-friction coefficient (0.002-0.003)
-  and is applied to the whole bounding-box surface. On a 50 m x 3.7 m launcher it is 95% of the
-  nose-on drag, which comes out at Cd 7.4 on the frontal area. A real launcher is 0.3-0.5.
-* No lift, no Mach dependence.
-
-## What KSAero does instead
-
-The vehicle is a cylinder along the assembly X axis (nose at +X), length L from the bounding box
-and diameter `D = sqrt(dy dz)`, which keeps stock's frontal area `pi/4 dy dz`. Forces follow Allen
-and Perkins' viscous-crossflow method for bodies of revolution, as extended to 0-180 degrees by
-Jorgensen. With `a` the angle from whichever end leads and coefficients on `A_ref = pi D^2 / 4`:
-
-```
-N_att = sin(2a) cos(a/2)                          attached (slender-body) normal force; tail-first, faded in over L/D 1 to 2
-N_x   = eta(L/D, Mn) c_dc(Mn) (L D / A_ref) sin^2 a   separated crossflow, Mn = M sin a
-C_A   = (Cd0 f(M) + Cf pi D L / A_ref) cos^2 a     Cd0 = 0.3 nose-first, 1.0 tail-first, Cf = 0.0025
-
-C_L = (s(a) N_att + N_x) cos a - C_A sin a
-C_D = (N_att + N_x) sin a + C_A cos a
-```
-
-* **Axisymmetric.** Roll changes the direction of the lift, never its size.
-* **Drag vs alpha.** Stays near the nose-on value for the first few degrees, then rises as the
-  crossflow builds. Broadside it is about half of stock's (finite-length factor eta, and no skin
-  term on top).
-* **Lift and stall.** The attached-flow lift stalls between 20 and 30 degrees: `s(a)` takes away its
-  lift share and keeps its drag, as a separated body would. The crossflow lift does not stall and
-  peaks around 55-60 degrees, as it does on real bodies. On a slender rocket the stall is a knee in
-  the lift curve; on a short body (a lander, a capsule nose-first) it is a cliff.
-* **Tail-first.** Slender-body lift depends on the cross-section, not on the shape of the leading
-  end, so a booster flying engine-first keeps its attached lift and lifts towards the side its
-  engine end is tilted, from the first degree, at every Mach (L/D about 0.2-0.6 at 15 degrees). That
-  lift needs body length to build behind the flat face, so it fades out below two diameters: a
-  capsule flying heat shield first is left with crossflow and its tilted axial force, and gets an
-  L/D of about -0.2 to -0.3, like Apollo. (An earlier version gave no tail-first attached lift at
-  all; on booster shapes crossflow and the tilted axial force then nearly cancelled, and the lift
-  flipped sign with Mach.)
-* **Mach 1.** The zero-alpha pressure drag is flat to M 0.8, peaks at M 1.05 (2.0x nose-first, 1.7x
-  blunt base first) and settles towards 1.3x / 1.6x supersonic.
-* **Lift at Mach 1?** Not as a spike. Slender-body lift slope is Mach-independent, and the
-  crossflow peaks when the *crossflow* Mach `M sin a` passes 1, not when M does: at 60 degrees that
-  is around M 1.5, at 5 degrees it is hypersonic. Through M 1 the small-alpha lift actually dips
-  slightly, because the axial drag rise tilts against it. Wings have a Prandtl-Glauert lift rise
-  towards M 1; a cylinder does not.
-
-Forces act through the centre of mass, so there are still no aero torques. Stock's rotational
-damping term is kept as is. Ocean drag is untouched.
-
-### Numbers
-
-Slender launcher, L 50 m, D 3.7 m, Mach 0.5. `C_L`, `C_D` on the frontal area; stock has no lift.
-
-| alpha | C_L   | C_D   | L/D  | stock C_D (roll 0 / 45) |
-|------:|------:|------:|-----:|------------------------:|
-| 0     | 0.000 | 0.435 | 0.00 | 7.38 / 7.38             |
-| 5     | 0.243 | 0.455 | 0.53 | 9.18 / 9.93             |
-| 10    | 0.684 | 0.549 | 1.25 | 10.96 / 12.45           |
-| 20    | 2.025 | 1.146 | 1.77 | 14.43 / 17.35           |
-| 30    | 2.913 | 2.477 | 1.18 | 17.67 / 21.94           |
-| 60    | 5.405 | 10.23 | 0.53 | 25.11 / 32.52           |
-| 90    | 0.000 | 15.59 | 0.00 | 27.73 / 36.28           |
-| 180   | 0.000 | 1.135 | 0.00 | 8.08 / 8.08             |
-
-Expect much less drag on ascent than stock (about 17x less nose-on), so higher speeds low in the
-atmosphere and a higher max-Q. Stock destroys a vehicle at 200 kPa dynamic pressure.
-
-`dotnet run --project KSAero.Tests` checks the model's invariants and prints these tables for a
-launcher, a short lander and a capsule, plus a Mach sweep.
-
-## Tuning
-
-Every number is a constant in `AeroParameters` in [KSAero/AeroModel.cs](KSAero/AeroModel.cs).
+The whole blade turns about its span axis, through the middle of the chord. Its look is the stock
+flat panel of the same size turned on edge (the 3 m blade is the 2 m panel scaled up); KSAero has no
+meshes of its own yet.
 
 ## In game
 
-While the controlled vehicle is in an atmosphere a small **KSAero** window shows Mach, q, angle of
-attack, C_L, C_D, lift and drag in kN, and the equivalent cylinder. It runs the same function the
-physics does.
+The fins deflect up to 45 deg at 30 deg/s. AdvancedFlightComputer flies them: KSAero registers them
+with its control-surface registry, and its attitude controller and touchdown guidance command them.
+Without AdvancedFlightComputer nothing moves them.
 
-## How it hooks in
+A **KSAero fins** debug window (one slider for all fins and one per fin, and how long physics waits
+for the aero) is in the code but off; set `Mod.ShowFinDebugWindow` to true to build it in.
 
-A Harmony transpiler on `PhysicsStates.ComputeDerivatives` swaps the one `ComputeDrag` call that is
-passed `PhysicsEnvironment.AtmosphericDensity` for `AirForcePatch.ComputeAirForces`, which has the
-same signature. The call site is rewritten rather than `ComputeDrag` patched, because `ComputeDrag`
-is `AggressiveInlining`. If the method no longer has exactly one such call the patch refuses, logs a
-warning, and stock aero stays.
+Deflections are not saved: a loaded vehicle's fins start at zero.
 
-Mach uses `a = sqrt(1.4 p / rho)` from the game's own pressure and density. KSA atmospheres are
-isothermal exponentials, so the speed of sound is constant per body (340 m/s on an Earth-like one).
+## How it works
+
+* A fin is one part. The blade is a subpart with its own box collider, defined in
+  [KSAero/KSAeroParts.xml](KSAero/KSAeroParts.xml). The collider is 10 mm thick, so stock's aero
+  mesh always makes the blade a zero-depth sheet.
+* Once a frame, at the start of `PartTree.FlushDirtyDerived` (a Harmony prefix), `FinActuators`
+  steps each fin towards its command at the actuator rate and re-poses the blade subpart about the
+  part's X axis, as `KeyframeAnimationModule` poses a subpart with a supplemental rotation. That is
+  on the main thread, after the frame has waited for the vehicle solver and before the next solve
+  starts, so no physics step sees a half-moved blade. This moves the model and the collider.
+* The aero mesh is not rebuilt. `AeroMeshSource.Gather`, which every mesh build starts from, is
+  wrapped so the blades sit at rest while it runs: every mesh has the fins at rest, and deflection
+  never changes the mesh hash. When `PartTree.AwaitAerodynamics` hands a physics step its mesh,
+  `FinAeroPanels` turns each fin's sheet panels in that mesh to the fin's angle, a rigid rotation
+  about the hinge computed from the rest geometry (`FinPanelSet`), and makes the surface flow
+  recompute.
+
+### Cost and accuracy
+
+Offline, against meshes built by KSA's own `AeroAssembly`:
+
+| Case | Turn the panels + flow + loads | Full re-mesh |
+|---|---|---|
+| 1 m fin on a 3.7 m hull | 0.26 ms | 7.5 ms |
+| 3 m fin on a 1.2 m hull (91 fin panels) | 0.64 ms | 13.4 ms |
+
+The flow and loads are computed every step anyway, so the pose itself adds little; and nothing
+blocks physics. Where the mesh resolves the fin (3 m fin, 0.21 m panels) the loads match a full
+re-mesh at the same angle within about 1-4%. Where it does not, re-meshing at each angle is noisy
+and not even monotonic in the angle, while turning the panels stays linear.
+
+### Fin size
+
+Stock aero sizes its panels from the vehicle (about an eighth of the main body's section) and
+loses about half a panel around a sheet's edges. On a 3.7 m launcher (0.65 m panels) a 1 m fin
+keeps under half its area in the aero mesh, a 2 m fin a little under half, a 3 m fin about two
+thirds; a 1 m fin standing clear of the hull disappears. Size fins to several panel widths.
 
 ## Build
 
@@ -119,7 +79,7 @@ isothermal exponentials, so the speed of sound is constant per body (340 m/s on 
 dotnet build KSAero
 ```
 
-builds and copies `KSAero.dll` and `mod.toml` into
+builds and copies `KSAero.dll`, `mod.toml` and `KSAeroParts.xml` into
 `Documents\My Games\Kitten Space Agency\mods\KSAero\`. Pass `-p:DeployToMods=false` to skip that.
 Enable the mod in the game's mod list (or `manifest.toml`).
 
@@ -134,12 +94,3 @@ Set `USERPROFILE`, which sets where the mod deploys, and `KsaDir`, which locates
 ```sh
 USERPROFILE="$HOME" dotnet build KSAero -p:GenerateLaunchProfile=false -p:KsaDir="$HOME/Applications/Kitten Space Agency.app/Contents/Resources"
 ```
-
-## Caveats
-
-* The bounding box is the only geometry. Side boosters, fins and wings widen it, and the model
-  treats the result as a fat cylinder.
-* No aero torques, so nothing weathervanes, and lift does not trim the vehicle.
-* AdvancedFlightComputer measures its drag table through `PhysicsStates.ComputeDerivatives`, so it
-  picks up KSAero's drag and transonic rise without knowing KSAero exists. Its solvers model drag
-  only; the lift is reported on its aero gauge but left out of the predictions.

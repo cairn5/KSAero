@@ -9,6 +9,7 @@
       DeployToMods           false builds without touching the game's mods folder
       GenerateLaunchProfile  false skips writing a StarMap launch profile for this project
       StarMapDir             folder holding StarMap.exe (default: %USERPROFILE%\StarMap)
+      @(ModContent)          game content files copied beside the DLL and mod.toml (default: none)
 
     Beyond the plain copy it does three things.
 
@@ -83,7 +84,7 @@
     <Error Condition="'@(_ModDeployedAssembly)' == '' AND '$(_RunningGameProcesses)' == ''"
            Text="Could not copy $(AssemblyName).dll into &quot;$(ModDeployDir)&quot;. The game does not look like it is running, so check that the path exists and is writable." />
 
-    <Copy SourceFiles="$(MSBuildProjectDirectory)\mod.toml" DestinationFolder="$(ModDeployDir)" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\mod.toml;@(ModContent)" DestinationFolder="$(ModDeployDir)" />
   </Target>
 
   <Target Name="StampDeploySlot" AfterTargets="CopyToMods" Condition="'$(DeployToMods)' == 'true'">
