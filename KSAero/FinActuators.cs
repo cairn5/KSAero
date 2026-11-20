@@ -33,7 +33,7 @@ internal static class FinActuators
     /// <summary>Applied angles are rounded to this, so a fin holding still is not re-posed.</summary>
     private const double QuantumDeg = 0.1;
 
-    internal static float MaxDeflectionDeg = 30f;
+    internal static float MaxDeflectionDeg = 45f;
     internal static float RateDegPerSecond = 30f;
 
     /// <summary>Blade poses applied, for the debug window.</summary>

@@ -25,7 +25,7 @@ meshes of its own yet.
 ## In game
 
 While the controlled vehicle has fins, the **KSAero fins** window commands them: one slider for all
-fins and one per fin, a maximum deflection (default 30 deg) and an actuator rate (default 30 deg/s).
+fins and one per fin, a maximum deflection (default 45 deg) and an actuator rate (default 30 deg/s).
 It also shows how often the aero mesh is rebuilt and how long physics waits for it.
 
 Deflections are not saved: a loaded vehicle's fins start at zero. Nothing moves them except the
