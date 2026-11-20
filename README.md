@@ -43,31 +43,47 @@ window yet; there is no pitch/yaw/roll mixing.
   starts, so no physics step sees a half-moved blade. This moves the model and the collider.
 * The aero mesh is not rebuilt. `AeroMeshSource.Gather`, which every mesh build starts from, is
   wrapped so the blades sit at rest while it runs: every mesh has the fins at rest, and deflection
-  never changes the mesh hash. When `PartTree.AwaitAerodynamics` hands a physics step its mesh,
-  `FinAeroPanels` turns each fin's sheet panels in that mesh to the fin's angle, a rigid rotation
-  about the hinge computed from the rest geometry (`FinPanelSet`), and makes the surface flow
-  recompute.
+  never changes the mesh hash.
+* When `PartTree.AwaitAerodynamics` hands a physics step its mesh, `FinAeroPanels` claims each
+  fin's sheet panel slots in that mesh, writes the blade's true flat plate into them (equal strips
+  of the real rectangle), turns it to the fin's angle about the hinge (`FinPanelSet`), and makes
+  the surface flow recompute. Only panels inside a KSAero blade's box are claimed; nothing else in
+  the mesh is touched.
+
+### Why the plate is rewritten
+
+Stock dual-contours a sheet on a lattice one panel width across (panel width is about an eighth of
+the main body's cross-section, 0.65 m on a 3.7 m launcher). Each sheet quad joins the mean crossing
+points of four lattice cells, and lattice edges that end inside a body are dropped. So the sheet
+stops about half a cell short of the tip and both chord edges, starts about a cell off the hull,
+and its root panels warp, leaning up to 15 degrees. Both faces of a sheet are flown; nothing is
+one-sided. Areas stock makes of a square fin:
+
+| Fin | 3.7 m hull (0.65 m panels) | 1.2 m hull (0.21 m panels) |
+|---|---|---|
+| 1 m | 0.46 m^2 of 1 | 0.63 |
+| 2 m | 1.83 of 4 | 3.36 |
+| 3 m | 5.95 of 9 | 7.78 |
+
+A free-standing 1 m fin half a metre off a 3.7 m hull is dropped altogether. Rewriting the
+claimed slots with the real rectangle gives the fin its full area, its true centre and a flat
+normal; the load law needs nothing else (area, normal, centroid, and the corners for shielding).
+A fin the mesher dropped has no slots, so no aero; the fins window says so.
+
+Stock's own aero overlay draws the mesh's shared vertex list, so it still shows stock's sheets at
+rest, not the plates flown.
 
 ### Cost and accuracy
 
-Offline, against meshes built by KSA's own `AeroAssembly`:
+Offline, against meshes built by KSA's own `AeroAssembly`, with a second fixed fin and a flat
+panel next to the KSAero fin (neither is ever claimed or moved):
 
-| Case | Turn the panels + flow + loads | Full re-mesh |
-|---|---|---|
-| 1 m fin on a 3.7 m hull | 0.26 ms | 7.5 ms |
-| 3 m fin on a 1.2 m hull (91 fin panels) | 0.64 ms | 13.4 ms |
-
-The flow and loads are computed every step anyway, so the pose itself adds little; and nothing
-blocks physics. Where the mesh resolves the fin (3 m fin, 0.21 m panels) the loads match a full
-re-mesh at the same angle within about 1-4%. Where it does not, re-meshing at each angle is noisy
-and not even monotonic in the angle, while turning the panels stays linear.
-
-### Fin size
-
-Stock aero sizes its panels from the vehicle (about an eighth of the main body's section) and
-loses about half a panel around a sheet's edges. On a 3.7 m launcher (0.65 m panels) a 1 m fin
-keeps under half its area in the aero mesh, a 2 m fin a little under half, a 3 m fin about two
-thirds; a 1 m fin standing clear of the hull disappears. Size fins to several panel widths.
+* Side force for 5 deg of deflection, against Ackeret's flat-plate value: within 1-4% for 1, 2 and
+  3 m fins on both hulls at Mach 2 and 5, linear in the angle and antisymmetric; 10% low for the
+  2 m fin on the 3.7 m hull, behind the flat panel. Re-meshing at each angle instead gives a
+  quarter to a half of it and is not monotonic in the angle.
+* Pose, flow update and loads together: 0.3-0.7 ms, against 7-14 ms for a re-mesh. The flow and
+  loads run every step anyway, and nothing blocks physics.
 
 ## Build
 
