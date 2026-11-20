@@ -87,13 +87,11 @@ internal static class FinDebugWindow
             ImGui.Text(Format("Fin poses {0}/s (panels turned in place, no re-mesh)", _posesPerSecond));
             if (vehicle.Parts?.Aerodynamics?.Mesh is { } mesh)
             {
-                var fins = FinAeroPanels.Describe(mesh);
-                ImGui.Text(Format("Aero mesh: {0} fin panels on {1} fins, {2} panels in all, panel width {3:F2} m",
-                    fins.Panels, fins.Fins, mesh.SolidPanels.Length + mesh.SheetPanels.Length, mesh.PanelWidth));
-                ImGui.Text(Format("Fin area flown {0:F2} m^2 (stock's sheets had {1:F2} m^2)", fins.PlateArea, fins.StockArea));
-                if (fins.Dropped > 0)
-                    ImGui.TextDisabled(Format("{0} fin(s) dropped by the stock mesher: they have no aero.", fins.Dropped));
-                ImGui.TextDisabled("The stock aero overlay shows stock's sheets at rest, not the plates flown.");
+                (int fins, int panels) = FinAeroPanels.Describe(mesh);
+                ImGui.Text(Format("Aero mesh: {0} fin panels on {1} fins, {2} panels in all",
+                    panels, fins, mesh.SolidPanels.Length + mesh.SheetPanels.Length));
+                if (fins > 0 && panels == 0)
+                    ImGui.TextDisabled("No fin panels found: the fins will not change the aero.");
             }
             ImGui.Text(Format("Physics waiting on aero rebuilds: {0:F1} ms/s, longest {1:F1} ms",
                 _lastWait.TotalMs, _lastWait.MaxMs));

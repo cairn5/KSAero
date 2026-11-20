@@ -15,8 +15,8 @@ namespace KSAero;
 /// never triggers a rebuild.
 ///
 /// After <see cref="PartTree.AwaitAerodynamics"/> hands a physics step its mesh, each fin's sheet
-/// panel slots in that mesh get the fin's true plate, turned to the fin's current angle
-/// (<see cref="FinPanelSet"/>), if they do not have it already. That is on the vehicle's own solver thread, before the step computes its
+/// panels in that mesh are turned to the fin's current angle (<see cref="FinPanelSet"/>), if they
+/// are not there already. That is on the vehicle's own solver thread, before the step computes its
 /// loads; the main thread only changes the angles between solves.
 /// </summary>
 internal static class FinAeroPanels
@@ -27,9 +27,7 @@ internal static class FinAeroPanels
         public readonly FinPanelSet Panels = panels;
         public readonly Vector3 Hinge = hinge;
         public readonly doubleQuat Fin2Vehicle = fin2Vehicle;
-
-        /// <summary>NaN until the plate is first written, so a fin at rest is written too.</summary>
-        public double PosedDeg = double.NaN;
+        public double PosedDeg;
     }
 
     private sealed class MeshFins(FinEntry[] fins)
@@ -41,25 +39,15 @@ internal static class FinAeroPanels
 
     [ThreadStatic] private static List<Part>? _scratch;
 
-    /// <summary>
-    /// Fins in a mesh, fins the mesher dropped (no panels to write a plate into), and the plate area
-    /// flown against the sheet area stock had made of them, for the debug window.
-    /// </summary>
-    internal static (int Fins, int Dropped, int Panels, float PlateArea, float StockArea) Describe(AeroMesh mesh)
+    /// <summary>Fins and fin panels found in a mesh, for the debug window.</summary>
+    internal static (int Fins, int Panels) Describe(AeroMesh mesh)
     {
         if (!Maps.TryGetValue(mesh, out MeshFins? map))
-            return default;
-        int dropped = 0, panels = 0;
-        float plate = 0f, stock = 0f;
+            return (0, 0);
+        int panels = 0;
         foreach (FinEntry entry in map.Fins)
-        {
-            if (entry.Panels.PanelCount == 0)
-                dropped++;
             panels += entry.Panels.PanelCount;
-            plate += entry.Panels.PlateArea;
-            stock += entry.Panels.StockArea;
-        }
-        return (map.Fins.Length, dropped, panels, plate, stock);
+        return (map.Fins.Length, panels);
     }
 
     // ---- Gather at rest ----
