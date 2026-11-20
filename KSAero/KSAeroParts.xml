@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  KSAero's control surfaces. Each fin is one part: a fixed root that attaches to a hull like a
+  landing leg (a ToSurface connector at the part origin), and a blade subpart that KSAero turns
+  about the part's X axis. X is the span axis: the blade runs from the root at X = 0 out to -X.
+  The chord runs along Z and the thickness along Y.
+
+  The blade carries its own box collider, so stock 5901 aero, which builds its mesh from the
+  colliders, sees the blade where it is. KSAero re-poses the subpart and asks for a new aero mesh
+  whenever the deflection changes (FinActuators.cs). The blade mesh is the stock flat panel of the
+  same size, turned on edge; KSAero has no meshes of its own yet.
+-->
+<Assets>
+  <EditorTagDef Id="Aero" />
+
+  <!-- 1 m span x 1 m chord. The stock 1 m panel is 1 x 1 m in its XY plane and 35 mm thick in Z;
+       turned a quarter turn about X it lies in the fin's XZ plane. -->
+  <SubPart Id="KSAero_Subpart_FinBlade1m">
+    <Components>
+      <PartModel Key="KSAero_Subpart_FinBlade1m_Model">
+        <Mesh Ref="CoreStructuralA_Subpart_PanelFA" />
+        <Material Ref="CoreStructuralA_Material" />
+      </PartModel>
+      <MeshView>
+        <Mesh Ref="CoreStructuralA_Subpart_PanelFA_VM" />
+      </MeshView>
+      <Collider Key="BladeCollider">
+        <Colliders>
+          <Box Key="BladeBox">
+            <LocationAsmb X="0" Y="0" Z="0" />
+            <Collider2Asmb X="0" Y="0" Z="0" />
+            <LengthX M="1" />
+            <LengthY M="1" />
+            <LengthZ M="0.035" />
+          </Box>
+        </Colliders>
+      </Collider>
+    </Components>
+  </SubPart>
+
+  <Part Id="KSAero_AllMovingFin1m" DisplayName="All-Moving Fin 1 m">
+    <SubParts>
+      <SubPart Key="Blade" Ref="KSAero_Subpart_FinBlade1m">
+        <Transform>
+          <Position X="-0.5" />
+          <Rotation X="1.5708" />
+        </Transform>
+      </SubPart>
+    </SubParts>
+    <Connectors>
+      <!-- At the root, facing -X: the editor seats this point on the hull with -X along the
+           surface normal, so the blade stands straight out. -->
+      <Connector Key="Root">
+        <Transform>
+          <Position X="0" />
+        </Transform>
+        <Flags>ToSurface</Flags>
+      </Connector>
+    </Connectors>
+    <InertMasses>
+      <SolidCuboidMass>
+        <Mass Kg="40" />
+        <LocationAsmb X="-0.5" />
+        <LengthX M="1" />
+        <LengthY M="0.035" />
+        <LengthZ M="1" />
+      </SolidCuboidMass>
+    </InertMasses>
+    <EditorTags>
+      <EditorTag Ref="Aero" />
+    </EditorTags>
+  </Part>
+
+  <!-- 2 m span x 2 m chord, from the stock 2 m panel. -->
+  <SubPart Id="KSAero_Subpart_FinBlade2m">
+    <Components>
+      <PartModel Key="KSAero_Subpart_FinBlade2m_Model">
+        <Mesh Ref="CoreStructuralA_Subpart_PanelHA" />
+        <Material Ref="CoreStructuralA_Material" />
+      </PartModel>
+      <MeshView>
+        <Mesh Ref="CoreStructuralA_Subpart_PanelHA_VM" />
+      </MeshView>
+      <Collider Key="BladeCollider">
+        <Colliders>
+          <Box Key="BladeBox">
+            <LocationAsmb X="0" Y="0" Z="0" />
+            <Collider2Asmb X="0" Y="0" Z="0" />
+            <LengthX M="2" />
+            <LengthY M="2" />
+            <LengthZ M="0.035" />
+          </Box>
+        </Colliders>
+      </Collider>
+    </Components>
+  </SubPart>
+
+  <Part Id="KSAero_AllMovingFin2m" DisplayName="All-Moving Fin 2 m">
+    <SubParts>
+      <SubPart Key="Blade" Ref="KSAero_Subpart_FinBlade2m">
+        <Transform>
+          <Position X="-1" />
+          <Rotation X="1.5708" />
+        </Transform>
+      </SubPart>
+    </SubParts>
+    <Connectors>
+      <Connector Key="Root">
+        <Transform>
+          <Position X="0" />
+        </Transform>
+        <Flags>ToSurface</Flags>
+      </Connector>
+    </Connectors>
+    <InertMasses>
+      <SolidCuboidMass>
+        <Mass Kg="160" />
+        <LocationAsmb X="-1" />
+        <LengthX M="2" />
+        <LengthY M="0.035" />
+        <LengthZ M="2" />
+      </SolidCuboidMass>
+    </InertMasses>
+    <EditorTags>
+      <EditorTag Ref="Aero" />
+    </EditorTags>
+  </Part>
+</Assets>

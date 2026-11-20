@@ -47,6 +47,8 @@
     <None Update="mod.toml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <!-- Game content the mod ships beside its DLL: part definitions listed in mod.toml's assets. -->
+    <ModContent Include="KSAeroParts.xml" />
   </ItemGroup>
 
   <!-- Deploy into the game's mods folder on every build, write the StarMap launch profile, and
@@ -61,7 +63,7 @@
     <RemoveDir Directories="$(OutputPath)release" />
     <MakeDir Directories="$(ReleaseDir)" />
     <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="$(ReleaseDir)" />
-    <Copy SourceFiles="mod.toml" DestinationFolder="$(ReleaseDir)" />
+    <Copy SourceFiles="mod.toml;@(ModContent)" DestinationFolder="$(ReleaseDir)" />
     <ZipDirectory SourceDirectory="$(OutputPath)release" DestinationFile="$(ZipPath)" Overwrite="true" />
     <RemoveDir Directories="$(OutputPath)release" />
     <Message Importance="high" Text="Release packaged: $(ZipPath)" />

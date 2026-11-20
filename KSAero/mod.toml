@@ -1,4 +1,9 @@
 name = "KSAero"
 
+# Part definitions, loaded by the game itself. KSAero.dll moves the parts once StarMap loads it.
+assets = [
+    "KSAeroParts.xml",
+]
+
 [StarMap]
 EntryAssembly = "KSAero"
